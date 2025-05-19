@@ -29,6 +29,7 @@ func main() {
 	}
 
 	v2 := r.Group("/v2")
+	v2.Use(gee.Logger())
 	{
 		v2.GET("/hello/:name", func(ctx *gee.Context) {
 			// expect /hello/fqcd
@@ -51,3 +52,14 @@ func main() {
 
 	r.RUN(":9999")
 }
+
+// func onlyForV2() gee.HandlerFunc {
+// 	return func(ctx *gee.Context) {
+// 		// Start timer
+// 		t := time.Now()
+// 		// if a server error occurred
+// 		ctx.Fail()
+// 		// Calculate resolution time
+// 		log.Printf("[%d] %s in %v for group v2", c.StatusCode, c.Req.RequestURI, time.Since(t))
+// 	}
+// }
