@@ -1,65 +1,51 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
+	"text/template"
+	"time"
 
 	"github.com/iwantsomememories/seven_days_go/Gee/gee"
 )
 
+type student struct {
+	Name string
+	Age  int8
+}
+
+func FormatAsDate(t time.Time) string {
+	year, month, day := t.Date()
+	return fmt.Sprintf("%d-%02d-%02d", year, month, day)
+}
+
 func main() {
 	r := gee.New()
+	r.Use(gee.Logger())
+	r.SetFuncMap(template.FuncMap{
+		"FormatAsDate": FormatAsDate,
+	})
+	r.LoadHTMLGlob("templates/*")
+	r.Static("/assets", "./static")
+
+	stu1 := &student{Name: "fqcd", Age: 25}
+	stu2 := &student{Name: "Jack", Age: 22}
 	r.GET("/", func(ctx *gee.Context) {
-		ctx.HTML(http.StatusOK, "<h1>Hello Gee</h1>")
+		ctx.HTML(http.StatusOK, "css.tmpl", nil)
+	})
+	r.GET("/students", func(ctx *gee.Context) {
+		ctx.HTML(http.StatusOK, "arr.tmpl", gee.H{
+			"title":  "gee",
+			"stuArr": [2]*student{stu1, stu2},
+		})
 	})
 
-	r.GET("/index", func(ctx *gee.Context) {
-		ctx.HTML(http.StatusOK, "<h1>Index Page</h1>")
-	})
-
-	v1 := r.Group("/v1")
-	{
-		v1.GET("/", func(ctx *gee.Context) {
-			ctx.HTML(http.StatusOK, "<h1>Hello Gee</h1>")
-		})
-
-		v1.GET("/hello", func(ctx *gee.Context) {
-			// expect /hello?name=fqcd
-			ctx.String(http.StatusOK, "hello %s, you're at %s\n", ctx.Query("name"), ctx.Path)
-		})
-	}
-
-	v2 := r.Group("/v2")
-	v2.Use(gee.Logger())
-	{
-		v2.GET("/hello/:name", func(ctx *gee.Context) {
-			// expect /hello/fqcd
-			ctx.String(http.StatusOK, "hello %s, you're at %s\n", ctx.Param("name"), ctx.Path)
-		})
-
-		v2.POST("/login", func(ctx *gee.Context) {
-			ctx.JSON(http.StatusOK, gee.H{
-				"username": ctx.PostForm("username"),
-				"password": ctx.PostForm("password"),
-			})
-		})
-	}
-
-	r.GET("/assets/*filepath", func(ctx *gee.Context) {
-		ctx.JSON(http.StatusOK, gee.H{
-			"filepath:": ctx.Param("filepath"),
+	r.GET("/date", func(ctx *gee.Context) {
+		ctx.HTML(http.StatusOK, "custom_func.tmpl", gee.H{
+			"title": "gee",
+			"now":   time.Now(),
 		})
 	})
 
 	r.RUN(":9999")
 }
-
-// func onlyForV2() gee.HandlerFunc {
-// 	return func(ctx *gee.Context) {
-// 		// Start timer
-// 		t := time.Now()
-// 		// if a server error occurred
-// 		ctx.Fail()
-// 		// Calculate resolution time
-// 		log.Printf("[%d] %s in %v for group v2", c.StatusCode, c.Req.RequestURI, time.Since(t))
-// 	}
-// }
